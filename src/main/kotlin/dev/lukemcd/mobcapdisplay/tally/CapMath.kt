@@ -5,7 +5,7 @@ import net.minecraft.world.level.NaturalSpawner
 
 object CapMath {
 	// Copy of NaturalSpawner.MAGIC_NUMBER, per-chunk caps are defined in a 17x17 chunk area
-	private const val REFERENCE_CHUNK_AREA = 17 * 17
+	const val REFERENCE_CHUNK_AREA = 17 * 17
 
 	fun globalCap(category: MobCategory, spawnableChunks: Int): Int =
 		category.maxInstancesPerChunk * spawnableChunks / REFERENCE_CHUNK_AREA
