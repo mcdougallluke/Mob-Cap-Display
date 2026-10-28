@@ -1,9 +1,9 @@
 # Mob Cap Display
 
-## Setup
+A Fabric mod for 26.3 that shows which mob types are filling each mob cap category with counts.
 
-For setup instructions, please see the [Fabric Documentation page](https://docs.fabricmc.net/develop/getting-started/creating-a-project#setting-up) related to the IDE that you are using.
+The same jar needs to be installed on the server and client.
 
 ## License
 
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+CC0-1.0. See [LICENSE](LICENSE).

@@ -3,13 +3,14 @@
 	"id": "mob-cap-display",
 	"version": "${version}",
 	"name": "Mob Cap Display",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Shows which mob types fill each mob cap category, with per-type counts for the global and local caps.",
 	"authors": [
-		"Me!"
+		"lukeeIRL"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/mcdougallluke/Mob-Cap-Display",
+		"sources": "https://github.com/mcdougallluke/Mob-Cap-Display",
+		"issues": "https://github.com/mcdougallluke/Mob-Cap-Display/issues"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/mob-cap-display/icon.png",
@@ -29,17 +30,13 @@
 		]
 	},
 	"mixins": [
-		"mob-cap-display.mixins.json",
-		{
-			"config": "mob-cap-display.client.mixins.json",
-			"environment": "client"
-		}
+		"mob-cap-display.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.20.1",
 		"minecraft": "~26.3",
 		"java": ">=25",
-		"fabric-api": "*",
-		"fabric-language-kotlin": "*"
+		"fabric-api": ">=0.165.0",
+		"fabric-language-kotlin": ">=1.14.2+kotlin.2.4.21"
 	}
 }
