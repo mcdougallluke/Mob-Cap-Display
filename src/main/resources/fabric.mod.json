@@ -1,0 +1,45 @@
+{
+	"schemaVersion": 1,
+	"id": "mob-cap-display",
+	"version": "${version}",
+	"name": "Mob Cap Display",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/mob-cap-display/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			{
+				"value": "dev.lukemcd.mobcapdisplay.MobCapDisplay",
+				"adapter": "kotlin"
+			}
+		],
+		"client": [
+			{
+				"value": "dev.lukemcd.mobcapdisplay.client.MobCapDisplayClient",
+				"adapter": "kotlin"
+			}
+		]
+	},
+	"mixins": [
+		"mob-cap-display.mixins.json",
+		{
+			"config": "mob-cap-display.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*",
+		"fabric-language-kotlin": "*"
+	}
+}
