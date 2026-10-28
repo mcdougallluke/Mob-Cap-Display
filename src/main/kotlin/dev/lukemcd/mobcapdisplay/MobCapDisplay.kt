@@ -1,6 +1,7 @@
 package dev.lukemcd.mobcapdisplay
 
 import dev.lukemcd.mobcapdisplay.command.BreakdownCommand
+import dev.lukemcd.mobcapdisplay.config.ConfigManager
 import dev.lukemcd.mobcapdisplay.tally.CapMath
 import dev.lukemcd.mobcapdisplay.tally.MobCapTracker
 import net.fabricmc.api.ModInitializer
@@ -16,6 +17,7 @@ object MobCapDisplay : ModInitializer {
 	val LOGGER = LoggerFactory.getLogger(MOD_ID)
 
 	override fun onInitialize() {
+		ConfigManager.load()
 		ServerLevelEvents.UNLOAD.register { _, level -> MobCapTracker.forget(level) }
 		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> BreakdownCommand.register(dispatcher) }
 

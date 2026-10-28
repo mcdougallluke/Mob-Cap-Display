@@ -3,6 +3,7 @@ package dev.lukemcd.mobcapdisplay.text
 import dev.lukemcd.mobcapdisplay.tally.CapMath
 import dev.lukemcd.mobcapdisplay.tally.CategoryStats
 import dev.lukemcd.mobcapdisplay.tally.LevelSnapshot
+import dev.lukemcd.mobcapdisplay.tally.LocalStats
 import dev.lukemcd.mobcapdisplay.tally.TypeCount
 import kotlin.math.roundToInt
 import net.minecraft.network.chat.ClickEvent
@@ -13,6 +14,7 @@ import net.minecraft.network.chat.MutableComponent
 import net.minecraft.resources.ResourceKey
 import net.minecraft.world.entity.MobCategory
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.NaturalSpawner
 
 object BreakdownFormat {
 	private const val TEXT = 0xE6E6E6
@@ -29,40 +31,13 @@ object BreakdownFormat {
 	// chat font is proportional, 20 bar segments plus two spaces is about twelve spaces wide
 	private const val TYPE_LINE_INDENT = "            "
 
-	fun overview(dimension: ResourceKey<Level>, snapshot: LevelSnapshot): List<Component> {
-		val (empty, populated) = snapshot.categories.entries.partition { (_, stats) -> stats.count == 0 && stats.matchesVanilla }
+	private const val DIMENSION_COMMAND = "/mcd breakdown"
+	private const val NEAR_YOU_COMMAND = "/mcd breakdown local"
 
-		val lines = mutableListOf<Component>(overviewHeader(dimension, snapshot))
-		for ((category, stats) in populated) {
-			lines += categoryLine(category, stats, snapshot.spawnableChunks)
-			if (stats.perType.isNotEmpty()) lines += typeSummary(stats.perType)
-		}
-		if (empty.isNotEmpty()) {
-			lines += text("Empty: ${empty.joinToString { displayName(it.key) }}", MUTED)
-		}
-		return lines
-	}
+	private enum class View { DIMENSION, NEAR_YOU }
 
-	fun detail(dimension: ResourceKey<Level>, category: MobCategory, stats: CategoryStats): List<Component> {
-		val header = text(displayName(category), TEXT)
-			.append(separator())
-			.append(text(displayName(dimension), SECONDARY))
-			.append(separator())
-			.append(capUsage(stats))
-			.append(text("  ${capStatus(stats)}", MUTED))
-		if (!stats.matchesVanilla) header.append(mismatch(stats))
-
-		if (stats.perType.isEmpty()) return listOf(header, text(" No mobs counted", MUTED))
-		return listOf(header) + stats.perType.map { typeCount ->
-			Component.literal(" ")
-				.append(bar(typeCount.count, stats.count, BLUE))
-				.append("  ")
-				.append(typeEntry(typeCount))
-		}
-	}
-
-	private fun overviewHeader(dimension: ResourceKey<Level>, snapshot: LevelSnapshot): MutableComponent =
-		text("Mob caps", TEXT)
+	fun dimensionOverview(dimension: ResourceKey<Level>, snapshot: LevelSnapshot, showToggle: Boolean): List<Component> {
+		val header = text("Mob caps", TEXT)
 			.append(separator())
 			.append(text(displayName(dimension), SECONDARY))
 			.append(separator())
@@ -70,28 +45,131 @@ object BreakdownFormat {
 				text("${snapshot.spawnableChunks} chunks", MUTED)
 					.withHover(text("Spawnable chunks. Global caps scale with this count.", TEXT))
 			)
+		if (showToggle) header.append(viewToggle(View.DIMENSION, category = null))
 
-	private fun categoryLine(category: MobCategory, stats: CategoryStats, spawnableChunks: Int): MutableComponent {
+		val rows = snapshot.categories.map { (category, stats) ->
+			Row(category, stats.count, stats.cap, stats.perType, globalTooltip(category, stats, snapshot.spawnableChunks), DIMENSION_COMMAND, mismatch(stats))
+		}
+		return overviewLines(header, rows)
+	}
+
+	fun nearYouOverview(local: Map<MobCategory, LocalStats>): List<Component> {
+		val header = text("Mob caps", TEXT)
+			.append(separator())
+			.append(text("near you", SECONDARY))
+			.append(separator())
+			.append(text("within ${NaturalSpawner.SPAWN_DISTANCE_BLOCK} blocks", MUTED))
+			.append(viewToggle(View.NEAR_YOU, category = null))
+
+		val rows = local.map { (category, stats) ->
+			Row(category, stats.count, stats.cap, stats.perType, localTooltip(stats), NEAR_YOU_COMMAND, warning = null)
+		}
+		return overviewLines(header, rows)
+	}
+
+	fun dimensionDetail(dimension: ResourceKey<Level>, category: MobCategory, stats: CategoryStats, showToggle: Boolean): List<Component> {
+		val status = if (stats.count >= stats.cap) "natural spawns blocked" else "${stats.cap - stats.count} below cap"
+		val header = text(displayName(category), TEXT)
+			.append(separator())
+			.append(text(displayName(dimension), SECONDARY))
+			.append(separator())
+			.append(capUsage(stats.count, stats.cap))
+			.append(text("  $status", MUTED))
+		mismatch(stats)?.let(header::append)
+		if (showToggle) header.append(viewToggle(View.DIMENSION, category))
+		return detailLines(header, stats.perType, stats.count)
+	}
+
+	fun nearYouDetail(category: MobCategory, global: CategoryStats, local: LocalStats): List<Component> {
+		val status = when {
+			global.count >= global.cap -> "natural spawns blocked"
+			local.count >= local.cap -> "spawns blocked near you"
+			else -> "${local.cap - local.count} below your cap"
+		}
+		val header = text(displayName(category), TEXT)
+			.append(separator())
+			.append(text("near you", SECONDARY))
+			.append(separator())
+			.append(capUsage(local.count, local.cap))
+			.append(text("  $status", MUTED))
+			.append(viewToggle(View.NEAR_YOU, category))
+		return detailLines(header, local.perType, local.count)
+	}
+
+	private class Row(
+		val category: MobCategory,
+		val count: Int,
+		val cap: Int,
+		val perType: List<TypeCount>,
+		val tooltip: Component,
+		val viewCommand: String,
+		val warning: Component?,
+	)
+
+	private fun overviewLines(header: Component, rows: List<Row>): List<Component> {
+		val (empty, populated) = rows.partition { it.count == 0 && it.warning == null }
+
+		val lines = mutableListOf(header)
+		for (row in populated) {
+			lines += rowLine(row)
+			if (row.perType.isNotEmpty()) lines += typeSummary(row.perType)
+		}
+		if (empty.isNotEmpty()) {
+			lines += text("Empty: ${empty.joinToString { displayName(it.category) }}", MUTED)
+		}
+		return lines
+	}
+
+	private fun rowLine(row: Row): MutableComponent {
 		val line = Component.empty()
-			.append(bar(stats.count, stats.cap, capColor(stats)))
+			.append(bar(row.count, row.cap, capColor(row.count, row.cap)))
 			.append("  ")
-			.append(categoryLink(category, stats, spawnableChunks))
+			.append(
+				text(displayName(row.category), TEXT).withStyle {
+					it.withHoverEvent(HoverEvent.ShowText(row.tooltip))
+						.withClickEvent(ClickEvent.RunCommand("${row.viewCommand} ${row.category.serializedName}"))
+				}
+			)
 			.append(" ")
-			.append(capUsage(stats))
-		if (!stats.matchesVanilla) line.append(mismatch(stats))
+			.append(capUsage(row.count, row.cap))
+		row.warning?.let(line::append)
 		return line
 	}
 
-	private fun categoryLink(category: MobCategory, stats: CategoryStats, spawnableChunks: Int): MutableComponent {
-		val perChunk = category.maxInstancesPerChunk
-		val tooltip = text("Cap ${stats.cap} = $perChunk × $spawnableChunks ÷ ${CapMath.REFERENCE_CHUNK_AREA}\n", TEXT)
-			.append(text("Vanilla counted ${stats.vanillaCount}\n", SECONDARY))
-			.append(text("Click to list every mob type", MUTED))
-		return text(displayName(category), TEXT).withStyle {
-			it.withHoverEvent(HoverEvent.ShowText(tooltip))
-				.withClickEvent(ClickEvent.RunCommand("/mcd breakdown ${category.serializedName}"))
+	private fun detailLines(header: Component, perType: List<TypeCount>, total: Int): List<Component> {
+		if (perType.isEmpty()) return listOf(header, text(" No mobs counted", MUTED))
+		return listOf(header) + perType.map { typeCount ->
+			Component.literal(" ")
+				.append(bar(typeCount.count, total, BLUE))
+				.append("  ")
+				.append(typeEntry(typeCount))
 		}
 	}
+
+	private fun viewToggle(active: View, category: MobCategory?): MutableComponent {
+		val suffix = category?.let { " ${it.serializedName}" }.orEmpty()
+		return Component.literal("     ")
+			.append(viewOption("Dimension", active == View.DIMENSION, "$DIMENSION_COMMAND$suffix", "Show every loaded mob in this dimension"))
+			.append(separator())
+			.append(viewOption("Near you", active == View.NEAR_YOU, "$NEAR_YOU_COMMAND$suffix", "Show mobs counting toward your local cap"))
+	}
+
+	private fun viewOption(label: String, active: Boolean, command: String, hint: String): MutableComponent =
+		if (active) text(label, TEXT).withStyle { it.withUnderlined(true) }
+		else text(label, MUTED).withStyle {
+			it.withHoverEvent(HoverEvent.ShowText(text(hint, TEXT)))
+				.withClickEvent(ClickEvent.RunCommand(command))
+		}
+
+	private fun globalTooltip(category: MobCategory, stats: CategoryStats, spawnableChunks: Int): Component =
+		text("Cap ${stats.cap} = ${category.maxInstancesPerChunk} × $spawnableChunks ÷ ${CapMath.REFERENCE_CHUNK_AREA}\n", TEXT)
+			.append(text("Vanilla counted ${stats.vanillaCount}\n", SECONDARY))
+			.append(text("Click to list every mob type", MUTED))
+
+	private fun localTooltip(stats: LocalStats): Component =
+		text("Each player's local cap is ${stats.cap}\n", TEXT)
+			.append(text("Counts mobs in chunks within ${NaturalSpawner.SPAWN_DISTANCE_BLOCK} blocks of you\n", SECONDARY))
+			.append(text("Click to list every mob type", MUTED))
 
 	private fun typeSummary(perType: List<TypeCount>): MutableComponent {
 		val line = Component.literal(TYPE_LINE_INDENT)
@@ -108,16 +186,14 @@ object BreakdownFormat {
 	private fun typeEntry(typeCount: TypeCount): Component =
 		text("${typeCount.count} ", TEXT).append(typeCount.type.description.copy().withColor(SECONDARY))
 
-	private fun capUsage(stats: CategoryStats): MutableComponent = text("${stats.count}/${stats.cap}", capColor(stats))
+	private fun capUsage(count: Int, cap: Int): MutableComponent = text("$count/$cap", capColor(count, cap))
 
-	private fun capStatus(stats: CategoryStats): String =
-		if (stats.count >= stats.cap) "natural spawns blocked" else "${stats.cap - stats.count} below cap"
+	private fun mismatch(stats: CategoryStats): Component? =
+		if (stats.matchesVanilla) null else text("  ✘ vanilla ${stats.vanillaCount}", RED)
 
-	private fun mismatch(stats: CategoryStats): MutableComponent = text("  ✘ vanilla ${stats.vanillaCount}", RED)
-
-	private fun capColor(stats: CategoryStats): Int = when {
-		stats.count >= stats.cap -> RED
-		stats.count * 2 >= stats.cap -> AMBER
+	private fun capColor(count: Int, cap: Int): Int = when {
+		count >= cap -> RED
+		count * 2 >= cap -> AMBER
 		else -> GREEN
 	}
 

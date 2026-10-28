@@ -10,6 +10,8 @@ object CapMath {
 	fun globalCap(category: MobCategory, spawnableChunks: Int): Int =
 		category.maxInstancesPerChunk * spawnableChunks / REFERENCE_CHUNK_AREA
 
+	fun localCap(category: MobCategory): Int = category.maxInstancesPerChunk
+
 	fun matchesVanilla(): Boolean = runCatching {
 		NaturalSpawner::class.java.getDeclaredField("MAGIC_NUMBER")
 			.apply { isAccessible = true }
