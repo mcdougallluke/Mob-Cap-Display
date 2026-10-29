@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
 	id 'net.fabricmc.fabric-loom' version "${loom_version}"
@@ -51,6 +52,7 @@ tasks.withType(JavaCompile).configureEach {
 kotlin {
 	compilerOptions {
 		jvmTarget = JvmTarget.JVM_25
+		apiVersion = KotlinVersion.KOTLIN_2_4
 	}
 }
 
