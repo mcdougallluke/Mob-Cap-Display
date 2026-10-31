@@ -9,8 +9,9 @@ enum class HudCounts(val showDimension: Boolean, val showNearYou: Boolean) {
 class HudConfig {
 	var enabled = false
 	var counts = HudCounts.BOTH
-	var typesPerCategory = 4
-	var hideEmptyCategories = false
+	var typesPerCategory = 3
+	var hideEmptyCategories = true
+	var scale = 100
 	var background = true
 	var textShadow = true
 	var positionX = 0.0
@@ -18,5 +19,6 @@ class HudConfig {
 
 	companion object {
 		val TYPES_PER_CATEGORY_RANGE = 0..8
+		val SCALE_RANGE = 50..150
 	}
 }

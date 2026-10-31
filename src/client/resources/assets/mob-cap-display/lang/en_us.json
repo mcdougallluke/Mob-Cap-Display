@@ -12,6 +12,7 @@
 	"mob-cap-display.options.counts.near_you": "Near You",
 	"mob-cap-display.options.types": "Mob Types",
 	"mob-cap-display.options.types.tooltip": "How many mob types to list under each category",
+	"mob-cap-display.options.scale": "HUD Scale",
 	"mob-cap-display.options.hide_empty": "Hide Empty Categories",
 	"mob-cap-display.options.background": "Background",
 	"mob-cap-display.options.text_shadow": "Text Shadow",
