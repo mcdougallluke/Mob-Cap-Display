@@ -1,0 +1,23 @@
+{
+	"key.category.mob-cap-display.main": "Mob Cap Display",
+	"key.mob-cap-display.toggle_hud": "Toggle Mob Cap HUD",
+	"key.mob-cap-display.cycle_category": "Cycle HUD Category",
+
+	"mob-cap-display.options.title": "Mob Cap Display",
+	"mob-cap-display.options.enabled": "HUD",
+	"mob-cap-display.options.counts": "Counts",
+	"mob-cap-display.options.counts.tooltip": "Dimension counts every loaded mob in this dimension against the global cap. Near You counts mobs within %s blocks of you against your local cap.",
+	"mob-cap-display.options.counts.both": "Both",
+	"mob-cap-display.options.counts.dimension": "Dimension",
+	"mob-cap-display.options.counts.near_you": "Near You",
+	"mob-cap-display.options.types": "Mob Types",
+	"mob-cap-display.options.types.tooltip": "How many mob types to list under each category",
+	"mob-cap-display.options.hide_empty": "Hide Empty Categories",
+	"mob-cap-display.options.background": "Background",
+	"mob-cap-display.options.text_shadow": "Text Shadow",
+	"mob-cap-display.options.move": "Move HUD...",
+
+	"mob-cap-display.placement.title": "Move HUD",
+	"mob-cap-display.placement.hint": "Drag the panel to move it",
+	"mob-cap-display.placement.reset": "Reset Position"
+}

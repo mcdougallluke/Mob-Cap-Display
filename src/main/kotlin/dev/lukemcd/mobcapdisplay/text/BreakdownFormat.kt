@@ -5,6 +5,14 @@ import dev.lukemcd.mobcapdisplay.tally.CategoryStats
 import dev.lukemcd.mobcapdisplay.tally.LevelSnapshot
 import dev.lukemcd.mobcapdisplay.tally.LocalStats
 import dev.lukemcd.mobcapdisplay.tally.TypeCount
+import dev.lukemcd.mobcapdisplay.text.Palette.AMBER
+import dev.lukemcd.mobcapdisplay.text.Palette.BLUE
+import dev.lukemcd.mobcapdisplay.text.Palette.DIM
+import dev.lukemcd.mobcapdisplay.text.Palette.MUTED
+import dev.lukemcd.mobcapdisplay.text.Palette.RED
+import dev.lukemcd.mobcapdisplay.text.Palette.SECONDARY
+import dev.lukemcd.mobcapdisplay.text.Palette.TEXT
+import dev.lukemcd.mobcapdisplay.text.Palette.capColor
 import kotlin.math.roundToInt
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
@@ -17,15 +25,6 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.level.NaturalSpawner
 
 object BreakdownFormat {
-	private const val TEXT = 0xE6E6E6
-	private const val SECONDARY = 0xABB2BF
-	private const val MUTED = 0x7F848E
-	private const val DIM = 0x4B5263
-	private const val GREEN = 0x7BC67B
-	private const val AMBER = 0xE5C07B
-	private const val RED = 0xE06C75
-	private const val BLUE = 0x61AFEF
-
 	private const val BAR_SEGMENTS = 20
 	private const val OVERVIEW_TYPE_LIMIT = 5
 	// chat font is proportional, 20 bar segments plus two spaces is about twelve spaces wide
@@ -39,7 +38,7 @@ object BreakdownFormat {
 	fun dimensionOverview(dimension: ResourceKey<Level>, snapshot: LevelSnapshot, showToggle: Boolean): List<Component> {
 		val header = text("Mob caps", TEXT)
 			.append(separator())
-			.append(text(displayName(dimension), SECONDARY))
+			.append(text(dimension.displayName, SECONDARY))
 			.append(separator())
 			.append(
 				text("${snapshot.spawnableChunks} chunks", MUTED)
@@ -69,9 +68,9 @@ object BreakdownFormat {
 
 	fun dimensionDetail(dimension: ResourceKey<Level>, category: MobCategory, stats: CategoryStats, showToggle: Boolean): List<Component> {
 		val status = if (stats.count >= stats.cap) "natural spawns blocked" else "${stats.cap - stats.count} below cap"
-		val header = text(displayName(category), TEXT)
+		val header = text(category.displayName, TEXT)
 			.append(separator())
-			.append(text(displayName(dimension), SECONDARY))
+			.append(text(dimension.displayName, SECONDARY))
 			.append(separator())
 			.append(capUsage(stats.count, stats.cap))
 			.append(text("  $status", MUTED))
@@ -86,7 +85,7 @@ object BreakdownFormat {
 			local.count >= local.cap -> "spawns blocked near you"
 			else -> "${local.cap - local.count} below your cap"
 		}
-		val header = text(displayName(category), TEXT)
+		val header = text(category.displayName, TEXT)
 			.append(separator())
 			.append(text("near you", SECONDARY))
 			.append(separator())
@@ -115,7 +114,7 @@ object BreakdownFormat {
 			if (row.perType.isNotEmpty()) lines += typeSummary(row.perType)
 		}
 		if (empty.isNotEmpty()) {
-			lines += text("Empty: ${empty.joinToString { displayName(it.category) }}", MUTED)
+			lines += text("Empty: ${empty.joinToString { it.category.displayName }}", MUTED)
 		}
 		return lines
 	}
@@ -125,7 +124,7 @@ object BreakdownFormat {
 			.append(bar(row.count, row.cap, capColor(row.count, row.cap)))
 			.append("  ")
 			.append(
-				text(displayName(row.category), TEXT).withStyle {
+				text(row.category.displayName, TEXT).withStyle {
 					it.withHoverEvent(HoverEvent.ShowText(row.tooltip))
 						.withClickEvent(ClickEvent.RunCommand("${row.viewCommand} ${row.category.serializedName}"))
 				}
@@ -191,12 +190,6 @@ object BreakdownFormat {
 	private fun mismatch(stats: CategoryStats): Component? =
 		if (stats.matchesVanilla) null else text("  ✘ vanilla ${stats.vanillaCount}", RED)
 
-	private fun capColor(count: Int, cap: Int): Int = when {
-		count >= cap -> RED
-		count * 2 >= cap -> AMBER
-		else -> GREEN
-	}
-
 	private fun bar(part: Int, whole: Int, color: Int): MutableComponent {
 		val filled = filledSegments(part, whole)
 		return text("|".repeat(filled), color).append(text("|".repeat(BAR_SEGMENTS - filled), DIM))
@@ -206,14 +199,6 @@ object BreakdownFormat {
 		if (whole <= 0) return BAR_SEGMENTS
 		val segments = (part * BAR_SEGMENTS.toDouble() / whole).roundToInt().coerceAtMost(BAR_SEGMENTS)
 		return if (part > 0) segments.coerceAtLeast(1) else segments
-	}
-
-	private fun displayName(category: MobCategory): String =
-		category.serializedName.replace('_', ' ').replaceFirstChar { it.uppercase() }
-
-	private fun displayName(dimension: ResourceKey<Level>): String {
-		val id = dimension.identifier()
-		return if (id.namespace == "minecraft") id.path else id.toString()
 	}
 
 	private fun separator(): MutableComponent = text(" · ", DIM)

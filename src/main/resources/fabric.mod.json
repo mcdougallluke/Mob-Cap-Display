@@ -27,6 +27,12 @@
 				"value": "dev.lukemcd.mobcapdisplay.client.MobCapDisplayClient",
 				"adapter": "kotlin"
 			}
+		],
+		"modmenu": [
+			{
+				"value": "dev.lukemcd.mobcapdisplay.client.ModMenuIntegration",
+				"adapter": "kotlin"
+			}
 		]
 	},
 	"mixins": [
