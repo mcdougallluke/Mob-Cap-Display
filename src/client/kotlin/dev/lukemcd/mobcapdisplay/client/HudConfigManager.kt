@@ -23,6 +23,7 @@ object HudConfigManager {
 	private fun validate(config: HudConfig) {
 		if (config.counts == null) config.counts = HudCounts.BOTH
 		config.typesPerCategory = config.typesPerCategory.coerceIn(HudConfig.TYPES_PER_CATEGORY_RANGE)
+		config.scale = config.scale.coerceIn(HudConfig.SCALE_RANGE)
 		config.positionX = config.positionX.coerceIn(0.0, 1.0)
 		config.positionY = config.positionY.coerceIn(0.0, 1.0)
 	}

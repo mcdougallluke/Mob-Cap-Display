@@ -22,8 +22,7 @@ class HudConfigScreen(private val parent: Screen?) : Screen(Component.translatab
 		for (option in options()) rows.addChild(option.createButton(minecraft.options))
 		rows.addChild(
 			Button.builder(Component.translatable("$KEY.move")) { minecraft.gui.setScreen(HudPlacementScreen(this)) }
-				.width(2 * OPTION_WIDTH + COLUMN_SPACING).build(),
-			2,
+				.width(OPTION_WIDTH).build()
 		)
 		layout.addToContents(grid)
 
@@ -46,6 +45,7 @@ class HudConfigScreen(private val parent: Screen?) : Screen(Component.translatab
 			OptionInstance.createBoolean("$KEY.enabled", config.enabled) { ClientConnection.setHudEnabled(it) },
 			countsOption(config.counts),
 			typesOption(config.typesPerCategory),
+			scaleOption(config.scale),
 			toggle("hide_empty", config.hideEmptyCategories) { hudConfig, value -> hudConfig.hideEmptyCategories = value },
 			toggle("background", config.background) { hudConfig, value -> hudConfig.background = value },
 			toggle("text_shadow", config.textShadow) { hudConfig, value -> hudConfig.textShadow = value },
@@ -67,6 +67,14 @@ class HudConfigScreen(private val parent: Screen?) : Screen(Component.translatab
 		OptionInstance.IntRange(HudConfig.TYPES_PER_CATEGORY_RANGE.first, HudConfig.TYPES_PER_CATEGORY_RANGE.last),
 		initial,
 	) { value -> HudConfigManager.update { it.typesPerCategory = value } }
+
+	private fun scaleOption(initial: Int): OptionInstance<Int> = OptionInstance(
+		"$KEY.scale",
+		OptionInstance.noTooltip(),
+		{ caption, value -> Options.genericValueLabel(caption, Component.literal("$value%")) },
+		OptionInstance.IntRange(HudConfig.SCALE_RANGE.first, HudConfig.SCALE_RANGE.last),
+		initial,
+	) { value -> HudConfigManager.update { it.scale = value } }
 
 	private fun toggle(name: String, initial: Boolean, apply: (HudConfig, Boolean) -> Unit): OptionInstance<Boolean> =
 		OptionInstance.createBoolean("$KEY.$name", initial) { value -> HudConfigManager.update { apply(it, value) } }
