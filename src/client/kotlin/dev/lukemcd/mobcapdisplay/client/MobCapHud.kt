@@ -35,7 +35,8 @@ object MobCapHud : HudElement {
 		val minecraft = Minecraft.getInstance()
 		// only the full F3 screen overlaps the HUD; showDebugScreen() is also true for in-world entries like F3+B hitboxes
 		if (!ClientConnection.hudEnabled || minecraft.debugEntries.isOverlayVisible) return
-		if (minecraft.gui.screen() is HudPlacementScreen) return
+		// menus hide it like other HUDs, while chat and inventories aren't pause screens so it stays up there
+		if (minecraft.gui.screen()?.isPauseScreen == true) return
 		val caps = ClientConnection.latest?.current ?: return
 
 		val config = HudConfigManager.config
