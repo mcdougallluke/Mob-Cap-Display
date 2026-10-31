@@ -3,34 +3,38 @@ package dev.lukemcd.mobcapdisplay.client
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.CommandDispatcher
 import dev.lukemcd.mobcapdisplay.net.LevelCaps
-import dev.lukemcd.mobcapdisplay.net.Protocol
+import dev.lukemcd.mobcapdisplay.text.Palette.MUTED
+import dev.lukemcd.mobcapdisplay.text.Palette.TEXT
 import java.util.Locale
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.network.chat.Component
 
 object HudCommand {
-	private const val TEXT = 0xE6E6E6
-	private const val MUTED = 0x7F848E
-
 	fun register(dispatcher: CommandDispatcher<FabricClientCommandSource>) {
 		dispatcher.register(
 			ClientCommands.literal("mcdhud")
 				.then(ClientCommands.literal("on").executes { setHud(it.source, enabled = true) })
 				.then(ClientCommands.literal("off").executes { setHud(it.source, enabled = false) })
 				.then(ClientCommands.literal("status").executes { showStatus(it.source) })
+				.then(ClientCommands.literal("config").executes { openConfig(it.source) })
 		)
 	}
 
+	// chat closes itself after running the command, so the screen opens on the next tick
+	private fun openConfig(source: FabricClientCommandSource): Int {
+		val minecraft = source.client
+		minecraft.schedule { minecraft.gui.setScreen(HudConfigScreen(null)) }
+		return Command.SINGLE_SUCCESS
+	}
+
 	private fun setHud(source: FabricClientCommandSource, enabled: Boolean): Int {
-		ClientConnection.setHudEnabled(enabled)
-		source.sendFeedback(text(if (enabled) "Mob cap HUD on" else "Mob cap HUD off", TEXT))
-		if (enabled && ClientConnection.support != ServerSupport.SUPPORTED) source.sendFeedback(text(serverDescription(), MUTED))
+		source.sendFeedback(HudStatus.setHudEnabled(enabled))
 		return Command.SINGLE_SUCCESS
 	}
 
 	private fun showStatus(source: FabricClientCommandSource): Int {
-		source.sendFeedback(text(serverDescription(), TEXT))
+		source.sendFeedback(text(HudStatus.serverDescription(), TEXT))
 		source.sendFeedback(text("HUD ${if (ClientConnection.hudEnabled) "on" else "off"}", TEXT))
 
 		val latest = ClientConnection.latest
@@ -54,14 +58,6 @@ object HudCommand {
 			val localPart = local?.let { " · you ${it.count}/${it.cap}" }.orEmpty()
 			"  ${category.serializedName} ${stats.count}/${stats.cap}$localPart · ${stats.perType.size} types"
 		}
-
-	private fun serverDescription(): String = when (ClientConnection.support) {
-		ServerSupport.UNKNOWN -> "Not connected to a server yet"
-		ServerSupport.SUPPORTED -> "Server has Mob Cap Display"
-		ServerSupport.NOT_INSTALLED -> "Server doesn't have Mob Cap Display"
-		ServerSupport.INCOMPATIBLE ->
-			"Server runs Mob Cap Display protocol v${ClientConnection.serverProtocol}, you have v${Protocol.VERSION}. Update the mod on one side."
-	}
 
 	private fun text(content: String, color: Int) = Component.literal(content).withColor(color)
 }

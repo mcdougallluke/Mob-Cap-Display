@@ -12,8 +12,8 @@ import net.fabricmc.fabric.api.client.networking.v1.ServerboundPlayChannelEvents
 enum class ServerSupport { UNKNOWN, SUPPORTED, NOT_INSTALLED, INCOMPATIBLE }
 
 object ClientConnection {
-	var hudEnabled = false
-		private set
+	val hudEnabled: Boolean
+		get() = HudConfigManager.config.enabled
 	var support = ServerSupport.UNKNOWN
 		private set
 	var serverProtocol: Int? = null
@@ -37,7 +37,8 @@ object ClientConnection {
 	}
 
 	fun setHudEnabled(enabled: Boolean) {
-		hudEnabled = enabled
+		HudConfigManager.update { it.enabled = enabled }
+		if (!enabled) latest = null
 		if (support == ServerSupport.SUPPORTED) sendSubscription()
 	}
 
@@ -59,6 +60,7 @@ object ClientConnection {
 			latest = null
 			return
 		}
+		if (!hudEnabled) return
 		latest = body
 		receivedAtMillis = System.currentTimeMillis()
 	}
